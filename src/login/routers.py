@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from src.database import db
-from src.models import login
+from src.login.models import login as  model_login
 from src.login.schema import TokenData
 
 router = APIRouter(
@@ -34,7 +34,7 @@ def create_access_token(data:dict):
 
 @router.post("/login")
 async def login(userLogin:OAuth2PasswordRequestForm=Depends()):
-    query = login.select().where(login.c.username == userLogin.username)
+    query = model_login.select().where(model_login.c.username == userLogin.username)
     result = await db.fetch_one(query)
     if not result:
         raise invalid_username_or_password
