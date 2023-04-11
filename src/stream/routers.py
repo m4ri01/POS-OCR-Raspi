@@ -1,56 +1,64 @@
-from fastapi import APIRouter,Request
+from fastapi import APIRouter,Request,File,UploadFile
 from src.stream.services import camera
 from fastapi.responses import HTMLResponse, StreamingResponse
+from src.stream.schema import Image
 from fastapi.templating import Jinja2Templates
+import numpy as np
+import base64
 import cv2
+import threading
 
 router = APIRouter(
     tags=["Stream Service"],
     prefix="/stream"
 )
 
-templates = Jinja2Templates(directory="stream/templates")
+templates = Jinja2Templates(directory="src/stream/templates")
 
 # A flag to indicate whether the camera should be running
-
+camera_running = None
+video = None
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-   return templates.TemplateResponse('index.html', {"request": request})
+    global video
+    global camera_running
+    if video is None:
+        camera_running = threading.Event()
+        camera_running.set()
+        video = cv2.VideoCapture(0)
+    return templates.TemplateResponse('index.html', {"request": request})
 
-def gen(camera):
+def gen():
     """Video streaming generator function."""
-    while True:
-        frame = camera.get_frame()
+    global camera_running
+    global video
+    while camera_running.is_set():
+        success, image = video.read()
+        if not success:
+            break
+        cv2.rectangle(image,(156,142),(484,338),(0,255,0),2)
+        ret, jpeg = cv2.imencode('.jpg', image)
+        frame = jpeg.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    print("stopped")
 
 
 @router.get('/video_feed', response_class=HTMLResponse)
 async def video_feed():
     """Video streaming route. Put this in the src attribute of an img tag."""
-    return  StreamingResponse(gen(camera.Camera()),
+    return  StreamingResponse(gen(),
                     media_type='multipart/x-mixed-replace; boundary=frame')
 
-@router.get("/capture_image")
-async def capture_image(request: Request):
-    camera = cv2.VideoCapture(0)  # Initialize the camera
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    camera.set(cv2.CAP_PROP_FPS, 30)
-    stopped = False  # Flag to stop the generator function
-
-    def generate():
-        nonlocal stopped  # Allow access to the stopped flag in the enclosing scope
-        while not stopped:
-            success, image = camera.read()
-            if not success:
-                break
-            _, img_encoded = cv2.imencode('.jpg', image)
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + img_encoded.tobytes() + b'\r\n')
-
-    try:
-        return StreamingResponse(generate(), media_type="multipart/x-mixed-replace;boundary=frame")
-    finally:
-        stopped = True  # Stop the generator function when the stream is closed
-        camera.release()  # Release the camera resources
+@router.post("/capture_image")
+async def capture_image(image: UploadFile = File(...)):
+    global camera_running
+    global video
+    camera_running.clear()
+    video.release()
+    video = None
+    contents = await image.read()
+    np_data = np.fromstring(contents, np.uint8)
+    img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
+    cv2.imwrite('src/static/uploads/gambar.jpg', img)
+    return {"message": "Image saved successfully."}
