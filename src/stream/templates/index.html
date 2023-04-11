@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Camera Stream</title>
+  </head>
+  <body>
+    <h1>Camera Stream</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <br>
+    <button id="capture-btn">Capture Image</button>
+    <br>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <br>
+    <img id="image" src="" style="display: none">
+    <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('capture-btn');
+    const image = document.getElementById('image');
+
+    captureBtn.onclick = async function() {
+    const response = await fetch('/stream/capture_image');
+    const reader = response.body.getReader();
+    const boundary = response.headers.get('content-type').split('boundary=')[1];
+    const decoder = new TextDecoder('utf-8');
+    let imageData = '';
+    let stopped = false;
+
+    while (!stopped) {
+        const { done, value } = await reader.read();
+        if (done) {
+        stopped = true;
+        break;
+        }
+
+        const chunk = decoder.decode(value);
+        const parts = chunk.split(`--${boundary}`);
+        parts.shift();
+        parts.pop();
+
+        for (let i = 0; i < parts.length; i++) {
+        const bytes = new Uint8Array(parts[i].trim().split('\r\n\r\n')[1]);
+        const blob = new Blob([bytes], { type: 'image/jpeg' });
+        const imageUrl = URL.createObjectURL(blob);
+        image.src = imageUrl;
+        image.style.display = 'block';
+        video.style.display = 'none';
+        canvas.style.display = 'none';
+
+        // Save the captured image to a file
+        const a = document.createElement('a');
+        a.download = 'captured-image.jpg';
+        a.href = imageUrl;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        }
+    }
+
+    const stream = video.srcObject;
+    const tracks = stream.getTracks();
+    tracks.forEach(track => track.stop());
+    video.srcObject = null;
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+        video.srcObject = stream;
+    })
+    .catch(error => {
+        console.error(error);
+    });
+
+    </script>
+  </body>
+</html>
