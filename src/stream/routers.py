@@ -1,19 +1,21 @@
 from fastapi import APIRouter,Request,File,UploadFile
-from src.stream.services import camera
 from fastapi.responses import HTMLResponse, StreamingResponse
 from src.stream.schema import Image
+from src.stream.services import OCR
 from fastapi.templating import Jinja2Templates
 import numpy as np
-import base64
+import logging
 import cv2
 import threading
 
+
+logging.basicConfig(level=logging.DEBUG)
 router = APIRouter(
     tags=["Stream Service"],
     prefix="/stream"
 )
 
-templates = Jinja2Templates(directory="src/stream/templates")
+templates = Jinja2Templates(directory="stream/templates")
 
 # A flag to indicate whether the camera should be running
 camera_running = None
@@ -60,5 +62,8 @@ async def capture_image(image: UploadFile = File(...)):
     contents = await image.read()
     np_data = np.fromstring(contents, np.uint8)
     img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
-    cv2.imwrite('src/static/uploads/gambar.jpg', img)
-    return {"message": "Image saved successfully."}
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    text = OCR.read_image(img)
+    logging.debug("aaaa")
+    cv2.imwrite('static/uploads/gambar.jpg', img)
+    return {"message": text}
