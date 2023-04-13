@@ -27,7 +27,7 @@ async def index(request: Request):
     if video is None:
         camera_running = threading.Event()
         camera_running.set()
-        video = cv2.VideoCapture(0)
+        video = cv2.VideoCapture(2)
     return templates.TemplateResponse('index.html', {"request": request})
 
 def gen():
@@ -38,7 +38,7 @@ def gen():
         success, image = video.read()
         if not success:
             break
-        cv2.rectangle(image,(156,142),(484,338),(0,255,0),2)
+        cv2.rectangle(image,(156,142),(484,338),(0,255,0),1)
         ret, jpeg = cv2.imencode('.jpg', image)
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
@@ -62,8 +62,8 @@ async def capture_image(image: UploadFile = File(...)):
     contents = await image.read()
     np_data = np.fromstring(contents, np.uint8)
     img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    # cv2.imwrite('static/uploads/gambar.jpg', img)
     text = OCR.read_image(img)
-    logging.debug("aaaa")
-    cv2.imwrite('static/uploads/gambar.jpg', img)
-    return {"message": text}
+    logging.debug(text)
+ 
+    return {"message": "ok"}

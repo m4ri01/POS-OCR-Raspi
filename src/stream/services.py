@@ -1,30 +1,47 @@
 import cv2
 import pytesseract
-
+from pytesseract import Output
+import numpy as np
 class OCR:
     @staticmethod
     def read_image(img):
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        gray = cv2.medianBlur(gray, 3)
-        gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-        gray = img
-        # Text detection
-        text_detector = cv2.text.TextDetectorCNN_create("model/textbox.prototxt", "model/TextBoxes_icdar13.caffemodel")
-        boxes, confidences = text_detector.detect(gray)
+        # img = cv2.imread(img)
+        img = img[142:338,156:484]
+        # Resize the image if required
+        # img = cv2.resize(img, (width//2, height//2))
+        
+        # Convert image to grey scale
+        gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        # Converting grey image to binary image by Thresholding
+        thresh_img = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+        
+        # configuring parameters for tesseract
+        custom_config = r'--oem 3 --psm 3'
+        
+        # Get all OCR output information from pytesseract
+        ocr_output_details = pytesseract.image_to_data(thresh_img, output_type = Output.DICT, config=custom_config, lang='eng')
+        # Total bounding boxes
+        n_boxes = len(ocr_output_details['level'])
+        
+        # Extract and draw rectangles for all bounding boxes
+        area = []
+        textFiltered = []
+        for i in range(n_boxes):
+            (x, y, w, h) = (ocr_output_details['left'][i], ocr_output_details['top'][i], ocr_output_details['width'][i], ocr_output_details['height'][i])
+            if len(ocr_output_details['text'][i])>3:
+                area.append(w*h)
+                textFiltered.append(ocr_output_details['text'][i])
+                cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            # if w*h > largest:
+            #     largest = w*h
+            #     largestidx=i
+            
+        
+        largestidx = np.argmax(area)
 
-        # Find the largest bounding box
-        largest_box = None
-        largest_area = 0
-        for box in boxes:
-            x, y, w, h = box
-            area = w * h
-            if area > largest_area:
-                largest_box = box
-                largest_area = area
-
-        # Extract text from the largest bounding box
-        x, y, w, h = largest_box
-        text_img = gray[y:y+h, x:x+w]
-        text = pytesseract.image_to_string(text_img)
-        print(text)
-        return text
+        # Print OCR Output kesys
+        # print(ocr_output_details['text'][largest])
+        cv2.imwrite('static/uploads/ocr.jpg', img)
+        return textFiltered[largestidx]
+        
