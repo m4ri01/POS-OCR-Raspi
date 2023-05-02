@@ -1,12 +1,21 @@
 import cv2
 import pytesseract
 from pytesseract import Output
+from imutils.object_detection import non_max_suppression
+import imutils
+
 import numpy as np
 class OCR:
     @staticmethod
     def read_image(img):
-        # img = cv2.imread(img)
+
+        layer_names = ['feature_fusion/Conv_7/Sigmoid', 'feature_fusion/concat_3']
+        net = cv2.dnn.readNet("src/stream/ai/east_text_detection.pb")
         img = img[142:338,156:484]
+        orig = img.copy()
+        
+        orig_h,orig_w = img.shape[:2]
+        blob = cv2.dnn.blobFromImage(img, 1.0, (new_w, new_h), (123.68, 116.78, 103.94), swapRB=True, crop=False)
         # Resize the image if required
         # img = cv2.resize(img, (width//2, height//2))
         
