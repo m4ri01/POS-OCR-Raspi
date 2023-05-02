@@ -15,7 +15,7 @@ router = APIRouter(
     prefix="/stream"
 )
 
-templates = Jinja2Templates(directory="stream/templates")
+templates = Jinja2Templates(directory="src/stream/templates")
 
 # A flag to indicate whether the camera should be running
 camera_running = None
@@ -62,7 +62,7 @@ async def capture_image(image: UploadFile = File(...)):
     contents = await image.read()
     np_data = np.fromstring(contents, np.uint8)
     img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
-    # cv2.imwrite('static/uploads/gambar.jpg', img)
+    cv2.imwrite('src/static/uploads/gambar.jpg', img)
     text = OCR.read_image(img)
     logging.debug(text)
  
