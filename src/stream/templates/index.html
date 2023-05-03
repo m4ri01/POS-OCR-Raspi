@@ -1,5 +1,7 @@
 <html>
   <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.11/cropper.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.11/cropper.min.css">
     <title>Video Streaming Demonstration</title>
     <script>
       
@@ -19,7 +21,10 @@
             body: formData
           })
           .then(function(response) {
-            console.log('Image uploaded successfully.');
+            response.text().then(function(data) {
+                console.log(data);
+                document.getElementById('message').innerHTML = JSON.parse(data).message;
+            });
           })
           .catch(function(error) {
             console.error('Error uploading image:', error);
@@ -34,5 +39,6 @@
     <img id="video-stream" src="{{ url_for('video_feed') }}">
     <br>
     <button onclick="saveImageAndSend()">Capture Image</button>
+    <div id="message"></div>
   </body>
 </html>

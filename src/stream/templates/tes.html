@@ -1,0 +1,131 @@
+<html>
+  <head>
+    <title>Video Streaming Demonstration</title>
+    <style>
+      #canvas-container {
+        position: relative;
+        width: 640px;
+        height: 480px;
+        overflow: hidden;
+      }
+
+      #crop-area {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100px;
+        height: 100px;
+        border: 2px dashed #ff0000;
+        pointer-events: none;
+      }
+
+      #cropped-image {
+        display: none;
+        margin-top: 10px;
+      }
+    </style>
+    <script>
+      function cropImage() {
+        var img = document.getElementById('captured-image');
+        var canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        var cropArea = document.getElementById('crop-area');
+        var x = cropArea.offsetLeft;
+        var y = cropArea.offsetTop;
+        var width = cropArea.offsetWidth;
+        var height = cropArea.offsetHeight;
+        var croppedCanvas = document.createElement('canvas');
+        croppedCanvas.width = width;
+        croppedCanvas.height = height;
+        var croppedCtx = croppedCanvas.getContext('2d');
+        croppedCtx.drawImage(canvas, x, y, width, height, 0, 0, width, height);
+        document.getElementById('cropped-image').src = croppedCanvas.toDataURL();
+        document.getElementById('cropped-image').style.display = 'block';
+      }
+
+      function saveImageAndSend() {
+        var img = document.getElementById('captured-image');
+        var canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        var cropArea = document.getElementById('crop-area');
+        var x = cropArea.offsetLeft;
+        var y = cropArea.offsetTop;
+        var width = cropArea.offsetWidth;
+        var height = cropArea.offsetHeight;
+        var croppedCanvas = document.createElement('canvas');
+        croppedCanvas.width = width;
+        croppedCanvas.height = height;
+        var croppedCtx = croppedCanvas.getContext('2d');
+        croppedCtx.drawImage(canvas, x, y, width, height, 0, 0, width, height);
+        croppedCanvas.toBlob(function(blob) {
+          var formData = new FormData();
+          formData.append('image', blob, 'image.png');
+          fetch('/stream/capture_image', {
+            method: 'POST',
+            body: formData
+          })
+          .then(function(response) {
+            response.text().then(function(data) {
+                console.log(data);
+                document.getElementById('message').innerHTML = JSON.parse(data).message;
+            });
+          })
+          .catch(function(error) {
+            console.error('Error uploading image:', error);
+          });
+        }, 'image/png');
+        document.getElementById('captured-image').style.display = 'none';
+        document.getElementById('cropped-image').style.display = 'none';
+        document.getElementById('video-stream').style.display = 'block';
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Video Streaming Demonstration</h1>
+    <div id="canvas-container">
+      <img id="video-stream" src="{{ url_for('video_feed') }}">
+      <img id="captured-image" style="display: none;">
+      <div id="crop-area"></div>
+    </div>
+    <br>
+    <button onclick="cropImage()">Crop Image</button>
+    <button onclick="saveImageAndSend()">Save and Send</button>
+    <div>
+      <img id="cropped-image">
+    </div>
+    <div id="message"></div>
+    <script>
+      function addCropArea() {
+        var img = document.getElementById('captured-image');
+        var container = document.getElementById('canvas-container');
+        container.style.width = img.offsetWidth + 'px';
+        container.style.height = img.offsetHeight + 'px';
+        var cropArea = document.getElementById('crop-area');
+        cropArea.style.width = img.offsetWidth / 2 + 'px';
+        cropArea.style.height = img.offsetHeight / 2 + 'px';
+        cropArea.style.top = img.offsetHeight / 4 + 'px';
+        cropArea.style.left = img.offsetWidth / 4 + 'px';
+        cropArea.style.pointerEvents = 'auto';
+      }
+
+      function reset() {
+        var img = document.getElementById('captured-image');
+        img.style.display = 'none';
+        document.getElementById('crop-area').style.pointerEvents = 'none';
+        document.getElementById('cropped-image').style.display = 'none';
+        document.getElementById('video-stream').style.display = 'block';
+      }
+
+      var img = document.getElementById('captured-image');
+      img.onload = addCropArea;
+      img.onerror = reset;
+    </script>
+  </body>
+</html>
+
