@@ -7,6 +7,22 @@ import imutils
 import numpy as np
 class OCR:
     @staticmethod
+    def detect_text(image):
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite("src/static/uploads/gray.png", gray_image)
+        thresh_img = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+        cv2.imwrite("src/static/uploads/binary.png",thresh_img)
+        kernel_size = 2
+        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        # Apply erosion
+        eroded_img = cv2.erode(thresh_img, kernel, iterations=1)
+        cv2.imwrite("src/static/uploads/eroded.png", eroded_img)
+        # recognizing text
+        config = '--oem 3 --psm 6'
+        text = pytesseract.image_to_string(thresh_img, config=config)
+        return text
+
+    @staticmethod
     def forward_passer(net, image, layers, timing=True):
         """
         Returns results from a single pass on a Deep Neural Net for a given list of layers
@@ -90,13 +106,13 @@ class OCR:
     def read_image(img):
         layer_names = ['feature_fusion/Conv_7/Sigmoid', 'feature_fusion/concat_3']
         net = cv2.dnn.readNet("src/stream/ai/frozen_east_text_detection.pb")
-        image = img[142:338,156:484]
+        image = img
         orig_image = image.copy()
         orig_h, orig_w = orig_image.shape[:2]
         width=320
         height=320
-        min_confidence=0.5
-        padding = 0.0
+        min_confidence=0.3
+        padding = 0.2
         image, ratio_w, ratio_h = OCR.resize_image(image, width, height)
         scores,geometry = OCR.forward_passer(net, image, layer_names)
         rectangles, confidences = OCR.box_extractor(scores, geometry, min_confidence)
@@ -130,7 +146,7 @@ class OCR:
             eroded_img = cv2.erode(thresh_img, kernel, iterations=1)
             cv2.imwrite("src/static/uploads/roi{}.png".format(idx), eroded_img)
             # recognizing text
-            config = '-l eng --oem 1 --psm 6'
+            config = '--oem 3 --psm 7'
             text = pytesseract.image_to_string(eroded_img, config=config)
 
             # collating results

@@ -2,43 +2,76 @@
   <head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.11/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.11/cropper.min.css">
-    <title>Video Streaming Demonstration</title>
+    <title>OCR</title>
     <script>
-      
+      const crop_btn = document.getElementById('crop-btn');
+      const imagebox = document.getElementById('image-box')
+      // function sendImageAPI(){
+      //   canvas.toBlob(function(blob) {
+          
+      //   }, 'image/png');
+      // }
       function saveImageAndSend() {
         var img = document.getElementsByTagName('img')[0];
         var canvas = document.createElement('canvas');
         var img = document.getElementById('video-stream');
+        const crop_btn = document.getElementById('crop-btn')
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
         var ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(function(blob) {
-          var formData = new FormData();
-          formData.append('image', blob, 'image.png');
-          fetch('/stream/capture_image', {
-            method: 'POST',
-            body: formData
-          })
-          .then(function(response) {
-            response.text().then(function(data) {
-                console.log(data);
-                document.getElementById('message').innerHTML = JSON.parse(data).message;
-            });
-          })
-          .catch(function(error) {
-            console.error('Error uploading image:', error);
-          });
-        }, 'image/png');
+        var resultImg = document.getElementById('result');
+        var image = canvas.toDataURL();
+        resultImg.src =image;
+        const cropper = new Cropper(resultImg, {
+          autoCropArea: 1,
+          viewMode: 1,
+          scalable: false,
+          zoomable: false,
+          movable: false,
+          minCropBoxWidth: 20,
+          minCropBoxHeight: 20,
+          background:false,
+        });
+        document.getElementById('crop-btn').style.display = 'block';
         img.src = "";
+        crop_btn.addEventListener('click',()=>{
+            cropper.getCroppedCanvas().toBlob((blob)=>{
+              var formData = new FormData();
+              formData.append('image', blob, 'image.png');
+              fetch('/stream/capture_image', {
+                method: 'POST',
+                body: formData
+              })
+              .then(function(response) {
+                response.text().then(function(data) {
+                    console.log(data);
+                    document.getElementById('message').innerHTML = JSON.parse(data).message;
+                    
+                  });
+              })
+              .catch(function(error) {
+                console.error('Error uploading image:', error);
+              });
+            },'image/png');
+            cropper.destroy(); // Destroy the cropper instance
+            crop_btn.style.display = 'none'; // Hide the crop button
+            resultImg.src = "";
+          });
       }
     </script>
   </head>
   <body>
-    <h1>Video Streaming Demonstration</h1>
+    <h1>OCR</h1>
     <img id="video-stream" src="{{ url_for('video_feed') }}">
     <br>
+    <img id="result">
+    <br>
     <button onclick="saveImageAndSend()">Capture Image</button>
+    <button id="crop-btn" style="display: none;" type="button">Crop</button>
+    <br>
+    <div id="image-box" class="image-container"></div>
+    <br>
     <div id="message"></div>
   </body>
 </html>
