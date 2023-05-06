@@ -25,5 +25,4 @@ app.include_router(router=warehouse_router)
 app.include_router(router=stream_router)
 
 if __name__ == "__main__":
-    uvicorn.run("main:app",port=8181,log_level="info",reload=True)
-    
+    uvicorn.run("main:app",port=8181,log_level="info",reload=True,host="0.0.0.0")
