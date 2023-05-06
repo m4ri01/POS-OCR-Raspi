@@ -1,8 +1,10 @@
-from fastapi import APIRouter,Request,File,UploadFile
-from fastapi.responses import HTMLResponse, StreamingResponse
-from src.stream.schema import Image
+from fastapi import APIRouter,Request,File,UploadFile, status
+from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
+from src.stream.schema import Image,ProductIn
 from src.stream.services import OCR
 from fastapi.templating import Jinja2Templates
+from src.stream.models import msProduct
+from src.database import db
 import numpy as np
 import logging
 import cv2
@@ -28,7 +30,7 @@ async def index(request: Request):
         camera_running = threading.Event()
         camera_running.set()
         video = cv2.VideoCapture(0)
-    return templates.TemplateResponse('index.html', {"request": request})
+    return templates.TemplateResponse('modalNew.html', {"request": request})
 
 def gen():
     """Video streaming generator function."""
@@ -54,16 +56,22 @@ async def video_feed():
 
 @router.post("/capture_image")
 async def capture_image(image: UploadFile = File(...)):
-    global camera_running
-    global video
-    camera_running.clear()
-    video.release()
-    video = None
     contents = await image.read()
     np_data = np.fromstring(contents, np.uint8)
     img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
     cv2.imwrite('src/static/uploads/gambar.jpg', img)
     text = OCR.detect_text(img)
     logging.debug(text)
- 
     return {"message": text}
+
+@router.post("/product",status_code=status.HTTP_201_CREATED)
+async def product(productParam:ProductIn):
+    logging.debug("ok")
+    global camera_running
+    global video
+    camera_running.clear()
+    video.release()
+    video = None
+    query = msProduct.insert().values(product_name=productParam.product_name,expired=productParam.expired,stock=productParam.stock)
+    last_record_id = await db.execute(query)
+    return RedirectResponse(url="/")

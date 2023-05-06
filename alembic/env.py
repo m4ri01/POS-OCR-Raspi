@@ -24,7 +24,8 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from src.login import models as login_models
 from src.warehouse import models as warehouse_models
-target_metadata = [login_models.metadata, warehouse_models.metadata]
+from src.stream import models as stream_models
+target_metadata = [login_models.metadata, warehouse_models.metadata,stream_models.metadata]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
