@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+alembic
+sqlalchemy
+databases[aiomysql]
+PyMySQL
+opencv-python
+opencv-contrib-python
+numpy
+pydantic
+pytesseract
+imutils
+python-jose
+passlib

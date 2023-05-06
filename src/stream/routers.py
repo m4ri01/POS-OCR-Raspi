@@ -27,7 +27,7 @@ async def index(request: Request):
     if video is None:
         camera_running = threading.Event()
         camera_running.set()
-        video = cv2.VideoCapture(1)
+        video = cv2.VideoCapture(0)
     return templates.TemplateResponse('index.html', {"request": request})
 
 def gen():
