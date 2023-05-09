@@ -7,9 +7,10 @@ from src.user.routers import router as user_router
 from src.login.routers import router as login_router
 from src.warehouse.routers import router as warehouse_router
 from src.stream.routers import router as stream_router
-
+from fastapi.staticfiles import StaticFiles
 from src.database import db
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="src/static"), name="static")
 
 @app.on_event("startup")
 async def startup():
