@@ -1,0 +1,15 @@
+body {
+    background-image: url('assets/img/bg-login.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  
+  .login-panel {
+    margin-top: 100px;
+  }
+  
+  .alerts {
+    margin-top: 10px;
+  }
+  

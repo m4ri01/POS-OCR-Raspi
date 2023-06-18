@@ -4,11 +4,14 @@ alembic
 sqlalchemy
 databases[aiomysql]
 PyMySQL
-opencv-python
-opencv-contrib-python
 numpy
 pydantic
 pytesseract
 imutils
 python-jose
 passlib
+python-multipart
+python-dotenv
+mysqlclient
+python-dateutil
+jinja2
