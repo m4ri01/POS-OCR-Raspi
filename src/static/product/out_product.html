@@ -1,0 +1,129 @@
+{% include 'parts/header.html' %}
+{% include 'parts/sidebar.html' %}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+      <h1>Barang Keluar</h1>
+    </div><!-- End Page Title -->
+
+    <section class="section">
+      <div class="form-group">
+
+        <div class="col-lg-12">
+
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title"> </h5>
+
+              <!-- Form Barang keluar -->
+              <form class="row g-4" action="{{url_for('out_item')}}" method="POST">
+                <div class="col-12"><label for="produkkeluar" class="form-label">Nama Produk</label></div>
+                
+                <div class="input-group mb-3">
+                  <input type="text" class="form-control" id="product_name" name="product_name" value="" aria-describedby="button-addon2"/>
+                  <button type="button" class="btn btn-outline-primary" type="button" id="product-btn" data-mdb-ripple-color="dark">
+                    <i class="bi bi-camera"></i>
+                  </button>
+                </div>
+
+                <div class="col-12">
+                  <label for="jumlah" class="form-label">Jumlah</label>
+                  <input type="number" id="stock" name="stock" class="form-control" id="jumlah">
+                </div>
+                <div class="text-center">
+                  <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+              </form><!-- End Form -->
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+    <div id="modal-product" class="modal">
+
+      <!-- Modal content -->
+      <div class="modal-content">
+      <span class="close">&times;</span>
+      <img id="video-stream-product" >
+      <br>
+      <img id="result-product">
+      <br>
+      <button onclick="saveProduct()">Capture Image</button>
+      <button id="crop-btn-product" style="display: none;" type="button">Crop</button>
+      <br>
+      </div>
+  </main><!-- End #main -->
+  <script>
+    var modalProduct = document.getElementById("modal-product");
+    var productBtn = document.getElementById("product-btn");
+    var span = document.getElementsByClassName("close")[0];
+    var crop_btn = document.getElementById('crop-btn');
+
+    productBtn.onclick = function() {
+        modalProduct.style.display = "block";
+        document.getElementById("video-stream-product").src = "{{ url_for('camera_feed') }}";
+    }
+    window.onclick = function(event){
+        if (event.target == modalProduct) {
+            modalProduct.style.display = "none";
+        }
+    }
+
+    function saveProduct(){
+        saveImageAndSend("video-stream-product","result-product","product_name","crop-btn-product")
+    }
+    function saveImageAndSend(img_param,result_param,input_name,crop_param) {
+    var img = document.getElementsByTagName('img')[0];
+    var canvas = document.createElement('canvas');
+    var img = document.getElementById(img_param);
+    const crop_btn = document.getElementById(crop_param)
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    var resultImg = document.getElementById(result_param);
+    var image = canvas.toDataURL();
+    resultImg.src =image;
+    const cropper = new Cropper(resultImg, {
+      autoCropArea: 1,
+      viewMode: 1,
+      scalable: false,
+      zoomable: false,
+      movable: false,
+      minCropBoxWidth: 20,
+      minCropBoxHeight: 20,
+      background:false,
+    });
+    document.getElementById(crop_param).style.display = 'block';
+    img.src = "";
+    crop_btn.addEventListener('click',()=>{
+        cropper.getCroppedCanvas().toBlob((blob)=>{
+          var formData = new FormData();
+          formData.append('image', blob, 'image.png');
+          fetch('/product/capture', {
+            method: 'POST',
+            body: formData
+          })
+          .then(function(response) {
+            response.text().then(function(data) {
+                console.log(data);
+                // document.getElementById('message').innerHTML = JSON.parse(data).message;
+                document.getElementById(input_name).value = JSON.parse(data).message;
+              });
+          })
+          .catch(function(error) {
+            console.error('Error uploading image:', error);
+          });
+        },'image/png');
+        cropper.destroy(); // Destroy the cropper instance
+        crop_btn.style.display = 'none'; // Hide the crop button
+        resultImg.src = "";
+        modalProduct.style.display = "none";
+      });
+  }
+</script>
+
+  {% include 'parts/footer.html' %}
