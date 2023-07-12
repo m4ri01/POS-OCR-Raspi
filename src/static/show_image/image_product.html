@@ -1,0 +1,54 @@
+{% include 'parts/header.html' %}
+{% include 'parts/sidebar.html' %}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+      <h1>Data Tabel</h1>
+    </div><!-- End Page Title -->
+
+    <section class="section">
+      <div class="row">
+        <div class="col-lg-12">
+
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">List Gambar</h5>
+              <!-- Table with stripped rows -->
+              <table class="table datatable">
+                <thead>
+                  <tr>
+                    <th scope="col">Original</th>
+                    <th scope="col">Gray</th>
+                    <th scope="col">Binary</th>
+                    <th scope="col">Eroded</th>
+                  </tr>
+                </thead>
+                
+                <tbody>
+                  <tr>
+                    <td><img src="{{ url_for('static', path='uploads/gambar.jpg') }}"></td>
+                    <td><img src="{{ url_for('static', path='uploads/gray.png') }}"></td>
+                    <td><img src="{{ url_for('static', path='uploads/binary.png') }}"></td>
+                    <td><img src="{{ url_for('static', path='uploads/eroded.png') }}"></td>
+                  </tr>
+                  <tr>
+                    <td><img src="{{ url_for('static', path='uploads/exp_gambar.jpg') }}"></td>
+                    <td><img src="{{ url_for('static', path='uploads/exp_gray.png') }}"></td>
+                    <td><img src="{{ url_for('static', path='uploads/exp_binary.png') }}"></td>
+                    <td><img src="{{ url_for('static', path='uploads/exp_eroded.png') }}"></td>
+                  </tr>
+                </tbody>
+              </table>
+              <!-- End Table with stripped rows -->
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main><!-- End #main -->
+
+  {% include 'parts/footer.html' %}

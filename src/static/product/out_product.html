@@ -103,20 +103,38 @@
         cropper.getCroppedCanvas().toBlob((blob)=>{
           var formData = new FormData();
           formData.append('image', blob, 'image.png');
-          fetch('/product/capture', {
-            method: 'POST',
-            body: formData
-          })
-          .then(function(response) {
-            response.text().then(function(data) {
-                console.log(data);
-                // document.getElementById('message').innerHTML = JSON.parse(data).message;
-                document.getElementById(input_name).value = JSON.parse(data).message;
+          if(input_name=="product_name"){
+                  fetch('/product/capture_logo', {
+                  method: 'POST',
+                  body: formData
+                })
+                .then(function(response) {
+                  response.text().then(function(data) {
+                      console.log(data);
+                      // document.getElementById('message').innerHTML = JSON.parse(data).message;
+                      document.getElementById(input_name).value = JSON.parse(data).message;
+                    });
+                })
+                .catch(function(error) {
+                  console.error('Error uploading image:', error);
+                });
+              }
+              else{
+                fetch('/product/capture_exp', {
+                method: 'POST',
+                body: formData
+              })
+              .then(function(response) {
+                response.text().then(function(data) {
+                    console.log(data);
+                    // document.getElementById('message').innerHTML = JSON.parse(data).message;
+                    document.getElementById(input_name).value = JSON.parse(data).message;
+                  });
+              })
+              .catch(function(error) {
+                console.error('Error uploading image:', error);
               });
-          })
-          .catch(function(error) {
-            console.error('Error uploading image:', error);
-          });
+              }
         },'image/png');
         cropper.destroy(); // Destroy the cropper instance
         crop_btn.style.display = 'none'; // Hide the crop button

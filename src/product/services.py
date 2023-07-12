@@ -3,6 +3,8 @@ import pytesseract
 from pytesseract import Output
 from imutils.object_detection import non_max_suppression
 import imutils
+import paho.mqtt.publish as publish
+import json
 
 import numpy as np
 class OCR:
@@ -20,6 +22,24 @@ class OCR:
         # recognizing text
         config = '--oem 3 --psm 6'
         text = pytesseract.image_to_string(thresh_img, config=config)
+        text = text.replace('\x0c','')
+        return text
+    
+    @staticmethod
+    def detect_text_exp(image):
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite("src/static/uploads/exp_gray.png", gray_image)
+        thresh_img = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+        cv2.imwrite("src/static/uploads/exp_binary.png",thresh_img)
+        kernel_size = 2
+        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        # Apply erosion
+        eroded_img = cv2.erode(thresh_img, kernel, iterations=1)
+        cv2.imwrite("src/static/uploads/exp_eroded.png", eroded_img)
+        # recognizing text
+        config = '--oem 3 --psm 6'
+        text = pytesseract.image_to_string(thresh_img, config=config)
+        text = text.replace('\x0c','')
         return text
 
     @staticmethod
@@ -194,3 +214,23 @@ class OCR:
         # cv2.imwrite('static/uploads/ocr.jpg', img)
         # return textFiltered[largestidx]
         
+class Email:
+    @staticmethod 
+    def send(product_name,expired):
+        msg = """
+        <h1>Peringatan!!!</h1><br>
+        <h3> Barang {} akan Expired kurang dari 1 bulan</h3>
+        <h3> Tanggal Expired {} </h3>
+        <h2> Mohon Diperhatikan</h2>
+        """
+        to = "melkimariogulo@gmail.com"
+        header = "Pesan Peringatan Barang Expired!"
+        dict_send = {
+            "header":header,
+            "msg":msg.format(product_name,expired),
+            "to":to
+        }
+        publish.single("/bimo/forwarder",json.dumps(dict_send),hostname="test.mosquitto.org")
+        # print("masuk")
+
+    

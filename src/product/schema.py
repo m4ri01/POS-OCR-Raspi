@@ -4,6 +4,7 @@ class ProductIn(BaseModel):
     product_name: str
     expired: str
     stock: int
+    notif: int
 
 class ProductOutItem(BaseModel):
     product_name: str

@@ -9,6 +9,7 @@ msProduct = Table(
     Column('product_name', String(255), nullable=False),
     Column('expired', String(255), nullable=False),
     Column('stock',Integer, nullable=False),
+    Column('notif',Integer,nullable=False),
     Column('created_at', DateTime(timezone=True), server_default=func.now()),
     Column('updated_at', DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 )
