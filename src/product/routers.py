@@ -1,13 +1,14 @@
 from fastapi import APIRouter,Request,File,UploadFile, status, Body, Form
 from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
 from src.product.schema import ProductIn,ProductOut, ProductOutItem
-from src.product.services import OCR
+from src.product.services import OCR, Email
 from fastapi.templating import Jinja2Templates
 from src.product.models import msProduct
 from pyfa_converter import FormDepends, PyFaDepends
 from src.database import db
 from src.exceptions import no_content
 import logging
+import time
 from rpi_lcd import LCD
 import numpy as np
 import logging
@@ -24,7 +25,7 @@ lcd = LCD()
 #set GPIO Pins
 GPIO_TRIGGER = 15
 GPIO_ECHO = 14
-GPIO_BUZZER =  17
+GPIO_BUZZER =  4
 GPIO.setup(GPIO_TRIGGER, GPIO.OUT)
 GPIO.setup(GPIO_ECHO, GPIO.IN)
 GPIO.setup(GPIO_BUZZER,GPIO.OUT)
@@ -97,7 +98,6 @@ async def read_item(request: Request):
     results = []
     for r in result:
         r_dict = r._asdict()
-        # logging.debug(r_dict)
         try:
             expired_date = r.expired
             expired_date_time = datetime.strptime(expired_date, '%d%m%y')
@@ -109,10 +109,21 @@ async def read_item(request: Request):
                 r_dict['status'] = 2
             else:
                 r_dict['status'] = 1
+            if r_dict['status'] == 1 and r.notif == 0:
+                print(r.id)
+                Email.send(r.product_name,expired_date_time)
+                query = msProduct.update().where(msProduct.c.id == r.id).values(notif=1)
+                await db.execute(query)
+                print(query)
+
         except:
             r_dict['status'] = 1
         results.append(r_dict)
     return templates.TemplateResponse("product/list_product.html", {"request":request,"result": results,"message":message})
+
+@router.get("/show_image")
+async def show_image(request:Request):
+    return templates.TemplateResponse("show_image/image_product.html",{"request":request})
 
 @router.get('/edit/{id}',response_class=HTMLResponse)
 async def edit_item_view(request: Request,id:int):
@@ -122,7 +133,7 @@ async def edit_item_view(request: Request,id:int):
 
 @router.post('/edit/{id}',response_class=HTMLResponse)
 async def edit_item(request: Request,id:int,product = PyFaDepends(model=ProductIn,_type=Form)):
-    query = msProduct.update().where(msProduct.c.id == id).values(product_name=product.product_name,expired=product.expired,stock=product.stock)
+    query = msProduct.update().where(msProduct.c.id == id).values(product_name=product.product_name,expired=product.expired,stock=product.stock,notif=product.notif)
     await db.execute(query)
     response = RedirectResponse(request.url_for("read_item"))
     response.status_code = status.HTTP_303_SEE_OTHER
@@ -149,12 +160,13 @@ async def insert_item(request: Request,product = PyFaDepends(model=ProductIn,_ty
     video = None
     try:
         expired_date_time = datetime.strptime(product.expired, '%d%m%y')
-        query = msProduct.insert().values(product_name=product.product_name,expired=product.expired,stock=product.stock)
+        query = msProduct.insert().values(product_name=product.product_name,expired=product.expired,stock=product.stock,notif=product.notif)
         await db.execute(query)
         buzzer()
-        lcd.text(productParam.product_name, 1)
-        lcd.text(productParam.expired, 2)
-    except :
+        lcd.text(product.product_name, 1)
+        lcd.text(product.expired, 2)
+    except Exception as e:
+        print(e)
         message.append({"msg": "Wrong Date Format, the format should (DDMMYY)"})
     response = RedirectResponse(request.url_for("read_item"))
     response.status_code = status.HTTP_303_SEE_OTHER
@@ -189,7 +201,7 @@ async def out_item(request: Request,product = PyFaDepends(model=ProductOutItem,_
     return response
 
 @router.delete("/{id}")
-async def delete_item(id:int):
+async def delete_item(request: Request,id:int):
     query = msProduct.delete().where(msProduct.c.id == id)
     await db.execute(query)
     response = RedirectResponse(request.url_for("read_item"))
@@ -200,11 +212,20 @@ async def delete_item(id:int):
 async def camera_feed():
     return  StreamingResponse(gen(),media_type='multipart/x-mixed-replace; boundary=frame')
 
-@router.post("/capture")
+@router.post("/capture_logo")
 async def capture_image(image: UploadFile = File(...)):
     contents = await image.read()
     np_data = np.fromstring(contents, np.uint8)
     img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
     cv2.imwrite('src/static/uploads/gambar.jpg', img)
     text = OCR.detect_text(img)
+    return {"message": text}
+
+@router.post("/capture_exp")
+async def capture_image(image: UploadFile = File(...)):
+    contents = await image.read()
+    np_data = np.fromstring(contents, np.uint8)
+    img = cv2.imdecode(np_data, cv2.IMREAD_COLOR)
+    cv2.imwrite('src/static/uploads/exp_gambar.jpg', img)
+    text = OCR.detect_text_exp(img)
     return {"message": text}
