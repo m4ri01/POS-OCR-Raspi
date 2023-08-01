@@ -223,7 +223,7 @@ class Email:
         <h3> Tanggal Expired {} </h3>
         <h2> Mohon Diperhatikan</h2>
         """
-        to = "melkimariogulo@gmail.com"
+        to = "satriobimantoro48@gmail.com"
         header = "Pesan Peringatan Barang Expired!"
         dict_send = {
             "header":header,
